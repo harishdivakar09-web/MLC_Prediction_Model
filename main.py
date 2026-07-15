@@ -35,8 +35,6 @@ for _ in range(2):
     plt.legend(team_mod['team_abrv'], loc = 'center left' , bbox_to_anchor = (1,0.5))
     plt.show()
 
-#Bar graph for categorical variables
-
 
 
 #Normalization of NRR, Win Percentage, and Standings
@@ -52,8 +50,8 @@ team_mod['win_percentage_2025'] = round((team_mod['win_percentage_2025']-team_mo
 standing_points= {
     'Group' : 0.0,
     '4th' : 0.25,
-    '3rd' : 0.5,
-    'Runner Up' : 0.75,
+    '3rd' : 0.4,
+    'Runner Up' : 0.8,
     'Winner' : 1.0
 }
 
@@ -72,14 +70,14 @@ weight_3 = 0.19246
 
 weights_team= pd.Series({
     'nrr_2023': weight_3**3,
-    'win_percentage_2023': weight_2**3,
-    'standings_2023': weight_1**3,
+    'win_percentage_2023': weight_1**3,
+    'standings_2023': weight_2**3,
     'nrr_2024': weight_3**2,
-    'win_percentage_2024': weight_2**2,
-    'standings_2024': weight_1**2,
+    'win_percentage_2024': weight_1**2,
+    'standings_2024': weight_2**2,
     'nrr_2025': weight_3,
-    'win_percentage_2025': weight_2,
-    'standings_2025': weight_1
+    'win_percentage_2025': weight_1,
+    'standings_2025': weight_2
 })
 
 #Final team score
@@ -138,6 +136,12 @@ bowling_mod_1['MLC_economy'] = round((bowling_mod_1['MLC_economy']-bowling_mod_1
 bowling_mod_1['MLC_strike_rate'] = round((bowling_mod_1['MLC_strike_rate']-bowling_mod_1['MLC_strike_rate'].max())/(bowling_mod_1['MLC_strike_rate'].min()-bowling_mod_1['MLC_strike_rate'].max()),4)
 bowling_mod_1['MLC_average'] = round((bowling_mod_1['MLC_average']-bowling_mod_1['MLC_average'].max())/(bowling_mod_1['MLC_average'].min()-bowling_mod_1['MLC_average'].max()),4)
 
+
+
+#Boxplot of bowling stats
+plt.boxplot(bowling_mod_1.loc[:, 'MLC_wickets':], orientation = 'horizontal')
+plt.yticks([1,2,3,4], list(bowling_mod_1.columns).replace("_"," ")[4:])
+plt.show()
 #Aggregating player statistics into team statistics
 bowling_list = list(bowling_mod_1.columns)
 bowling_mod_2 = bowling_mod_1.groupby('team_abrv')[bowling_list[4:]].mean().round(4).reset_index()
