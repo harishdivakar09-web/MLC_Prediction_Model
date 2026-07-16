@@ -1,137 +1,171 @@
 # MLC Team Prediction Model
 
-This project is a Python prediction model for ranking Major League Cricket (MLC) teams. It uses team history, batting statistics, bowling statistics, and all-rounder statistics to calculate a final score for each team. The highest final score represents the team the model predicts to be strongest based on the available data.
+This project ranks Major League Cricket (MLC) teams using historical team results and player performance data. It combines recent team success, batting, bowling, and all-rounder statistics into one score. The team with the highest final score is treated as the strongest prediction based on the supplied data.
 
-The main program is `main.py`. It reads the CSV files in this folder, processes the data with pandas, creates separate scores for each team category, combines those scores, and prints the final team rankings.
+The model is a weighted scoring model rather than a trained machine-learning model. Its weights are chosen using cricket knowledge, recent-season importance, and visual analysis of the data with Matplotlib.
 
-## Files
+## Technologies Used
 
-- `main.py` - runs the prediction model.
-- `batters.csv` - batting statistics for players, including strike rate, average, fours, and sixes.
-- `bowlers.csv` - bowling statistics for players, including wickets, average, economy, and strike rate.
-- `all_rounders.csv` - combined batting and bowling statistics for all-rounders.
-- `team_season.csv` - team results from recent MLC seasons, including wins, losses, net run rate, and final standings.
+- **Python** runs the scoring and ranking process.
+- **pandas** loads, cleans, normalizes, groups, weights, and combines the cricket data.
+- **Matplotlib** displays trends and statistical distributions that help explain and justify the selected weights.
+- **CSV files** store the team and player statistics used by the model.
 
-## What The Project Uses
+## Project Files
 
-This project uses:
+- `main.py` contains the complete analysis and prediction process.
+- `team_season.csv` contains team wins, losses, net run rate, and standings for 2023-2025.
+- `batters.csv` contains player batting strike rate, average, fours, and sixes.
+- `bowlers.csv` contains player wickets, bowling average, economy, and strike rate.
+- `all_rounders.csv` contains batting and bowling statistics for all-rounders.
 
-- Python for running the model.
-- pandas for loading, organizing, transforming, and calculating scores from the CSV data.
-- CSV files as the source data for teams and players.
+## Installation
 
-To install pandas, run:
+Python 3 is required. Install the two project dependencies with:
 
 ```bash
-pip install pandas
+pip install pandas matplotlib
 ```
 
-To run the project, use:
+Run the model from the project directory:
 
 ```bash
 python main.py
 ```
 
-## How The Model Works
+Matplotlib opens several charts while the program runs. Close each chart window to allow the program to continue to the next chart and eventually print the final ranking in the terminal.
 
-The model creates four main scores:
+## How the Model Works
+
+The program creates four category scores for every team:
 
 1. Team score
 2. Batting score
 3. Bowling score
 4. All-rounder score
 
-These scores are then combined into one final score for each team.
+Before applying weights, the numerical statistics are min-max normalized to values between `0` and `1`. This puts measurements with different units, such as win percentage, wickets, and economy rate, onto a comparable scale.
+
+For statistics where a lower value is better, including bowling economy, bowling average, and bowling strike rate, the normalization is reversed. A lower raw value therefore produces a higher model score.
 
 ### Team Score
 
-The team score is based on each team's recent season performance. `main.py` calculates win percentage for 2023, 2024, and 2025 using the wins and losses in `team_season.csv`.
+The team score uses results from the 2023, 2024, and 2025 seasons. pandas first calculates each season's win percentage:
 
-It also uses:
+```text
+win percentage = wins / (wins + losses) * 100
+```
 
-- Net run rate
-- Win percentage
-- Final standings
+The model then uses normalized net run rate, normalized win percentage, and a numerical value for the team's final standing:
 
-The standings are converted into number values:
+| Standing | Score |
+| --- | ---: |
+| Group | 0.00 |
+| 4th | 0.25 |
+| 3rd | 0.40 |
+| Runner Up | 0.80 |
+| Winner | 1.00 |
 
-- `Group` = `0.0`
-- `4th` = `0.25`
-- `3rd` = `0.5`
-- `Runner Up` = `0.75`
-- `Winner` = `1.0`
+The base team-performance weights are:
 
-The model gives more importance to recent seasons, especially 2025, by applying larger weights to newer data.
+| Statistic | Base weight |
+| --- | ---: |
+| Net run rate | `0.19246` |
+| Win percentage | `0.35` |
+| Final standing | `0.20` |
+
+Recency is built into the calculation. The 2025 values use the base weights, the 2024 weights are squared, and the 2023 weights are cubed. This reduces the influence of older seasons and gives the latest season the strongest effect on the prediction.
 
 ### Batting Score
 
-The batting score comes from `batters.csv`. The model uses:
+The batting score uses four normalized player statistics:
 
-- MLC strike rate
-- MLC average
-- MLC fours
-- MLC sixes
+| Statistic | Weight |
+| --- | ---: |
+| Strike rate | `0.50` |
+| Batting average | `0.30` |
+| Fours | `0.10` |
+| Sixes | `0.10` |
 
-These player stats are normalized, grouped by team, averaged, and then combined with weights. Batting average and strike rate receive the highest weights because they are strong indicators of batting performance.
+pandas groups the batters by team and averages their normalized statistics. A dot product then applies the weights to produce one batting score per team. Strike rate and batting average receive the largest weights because they represent scoring speed and consistency, while boundary totals provide supporting evidence.
 
 ### Bowling Score
 
-The bowling score comes from `bowlers.csv`. The model uses:
+The bowling score uses:
 
-- MLC wickets
-- MLC economy
-- MLC strike rate
-- MLC average
+| Statistic | Weight |
+| --- | ---: |
+| Wickets | `0.30` |
+| Economy | `0.40` |
+| Bowling strike rate | `0.20` |
+| Bowling average | `0.10` |
 
-For bowling, lower economy is better, so the code normalizes economy in reverse. This means a better economy rate receives a higher normalized score. The weighted bowling score gives the most importance to economy, followed by strike rate.
+Economy, strike rate, and average are reverse-normalized because lower values are better for a bowler. Economy receives the largest weight, followed by wickets, to reward teams that both limit runs and take wickets.
 
 ### All-Rounder Score
 
-The all-rounder score comes from `all_rounders.csv`. It includes both batting and bowling statistics:
+All-rounders are evaluated with both batting and bowling data:
 
-- Batting strike rate
-- Batting average
-- Fours
-- Sixes
-- Wickets
-- Bowling average
-- Economy
-- Bowling strike rate
+| Statistic | Weight |
+| --- | ---: |
+| Batting strike rate | `0.30` |
+| Batting average | `0.15` |
+| Fours | `0.0045` |
+| Sixes | `0.0045` |
+| Wickets | `0.10` |
+| Bowling average | `0.001` |
+| Economy | `0.30` |
+| Bowling strike rate | `0.05` |
 
-The code renames duplicate column names from the CSV so batting and bowling averages/strike rates can be handled separately. It then normalizes the values, groups players by team, averages the stats, and calculates a weighted all-rounder score.
+The code renames the duplicate bowling average and strike-rate columns so they remain separate from the batting versions. It then normalizes the data, averages players by team, and applies the weights. Batting strike rate and bowling economy have the greatest influence because they capture an all-rounder's impact in both disciplines.
 
-## How pandas Helps Build The Prediction Model
+## How Matplotlib Helps Justify the Weights
 
-pandas is important because it makes it easy to work with table-based data. In this project, each CSV file becomes a pandas DataFrame, which acts like a spreadsheet inside Python.
+Matplotlib does not calculate or train the weights. Instead, it provides visual checks that make the manual weighting decisions easier to explain:
 
-pandas allows the model to:
+- **Net run rate trend chart:** compares each team's NRR from 2023 through 2025 and shows how performance changes over time.
+- **Win-percentage trend chart:** compares team success across the same seasons and supports placing more emphasis on recent form.
+- **Batting box plot:** shows the spread and possible outliers in strike rate, average, fours, and sixes.
+- **Bowling box plot:** shows the distributions of wickets, average, economy, and strike rate.
+- **All-rounder box plot:** compares the spread of all eight batting and bowling measures used for all-rounders.
 
-- Read CSV files with `pd.read_csv()`.
-- Create new calculated columns, such as win percentage.
+The trend charts support the model's recency weighting because they reveal whether a team's performance is improving or declining. The box plots reveal skewness, variation, and outliers, helping prevent a large raw scale or a few extreme players from silently determining the score. pandas normalization then converts those differently scaled statistics to a common range before the chosen weights are applied.
+
+Together, Matplotlib provides the visual reasoning and pandas performs the numerical calculation.
+
+## How pandas Builds the Prediction
+
+pandas turns each CSV file into a DataFrame, similar to a spreadsheet table in Python. In `main.py`, it is used to:
+
+- Load data with `pd.read_csv()`.
+- Copy source data before modifying it.
+- Calculate win percentages and other derived columns.
 - Remove columns that are no longer needed.
-- Normalize statistics so different types of data can be compared fairly.
-- Group player data by team using `groupby()`.
-- Average player stats to create team-level stats.
-- Use weighted calculations with `dot()` to create category scores.
-- Merge multiple score tables into one final table.
-- Sort teams by final score.
+- Clean and map text standings to numerical scores.
+- Normalize statistics so different measurements can be compared fairly.
+- Group players by team with `groupby()` and calculate team averages with `mean()`.
+- Store weights in pandas Series objects.
+- Calculate weighted scores efficiently with `dot()`.
+- Merge the four category-score tables into one table.
+- Sort teams from highest to lowest final score.
 
-Without pandas, these steps would require much more manual code. pandas lets the project turn raw cricket statistics into clean, comparable team scores.
+This workflow is what makes the prediction model practical: pandas converts raw player-level and season-level records into consistent team-level features, then combines those features into a reproducible ranking.
 
-## Final Score
+## Final Ranking
 
-After calculating the individual category scores, the model combines them using these weights:
+The four category scores are combined with these final weights:
 
-- Team score: `0.5`
-- Batting score: `0.1`
-- Bowling score: `0.1`
-- All-rounder score: `0.3`
+| Category | Final weight |
+| --- | ---: |
+| Team score | `0.60` |
+| Batting score | `0.05` |
+| Bowling score | `0.15` |
+| All-rounder score | `0.20` |
 
-This means the final prediction focuses most on overall team performance and all-rounder strength, while still including batting and bowling performance.
+Historical team performance receives the largest share because it captures proven results across multiple seasons. Bowling and all-rounder strength receive the next-largest shares, while the separate batting score contributes the remaining amount.
 
-The final output is a ranked table with:
+The program prints a DataFrame containing `team_abrv` and `final_score`, sorted from the highest predicted score to the lowest.
 
-- `team_abrv`
-- `final_score`
+## Model Limitations
 
-Teams are sorted from highest final score to lowest final score.
+The result is a data-based ranking, not a guarantee of future outcomes. The model does not currently include injuries, roster changes, venue conditions, matchups, or uncertainty estimates. Its weights are manually selected and supported by exploratory charts rather than learned and validated against a separate set of historical match results.

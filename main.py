@@ -132,11 +132,10 @@ batting_score = pd.DataFrame({
 #Normalization of Wickets, Economy, Strike Rate, and Average
 bowling_mod_1 = bowling_raw.copy()
 
-print(bowling_mod_1['MLC_economy'].describe())
 
 #Boxplot of bowling stats
 plt.boxplot(bowling_mod_1.loc[:, 'MLC_wickets':], orientation = 'horizontal')
-plt.yticks(ticks = [1,2,3,4], labels = ["Wickets", "Economy", "Strike Rate", "Average"])
+plt.yticks(ticks = [1,2,3,4], labels = ["Wickets", "Average", "Economy", "Strike Rate"])
 plt.ylabel("Bowling Category")
 plt.show()
 
@@ -193,15 +192,15 @@ all_rounder_list = list(all_rounder_mod_1.columns)
 all_rounder_mod_2 = all_rounder_mod_1.groupby('team_abrv')[all_rounder_list[4:]].mean().round(4).reset_index()
 
 #Weight assignment
-weights_all_rounder= pd.Series({
-    'MLC_strike_rate': 0.25,
+weights_all_rounder= pd.Series({ 
+    'MLC_strike_rate': 0.3,
     'MLC_average': 0.15,
-    'MLC_fours': 0.005,
-    'MLC_sixes': 0.005,
-    'MLC_wickets': 0.005,
-    'MLC_average_bowling': 0.005,
+    'MLC_fours': 0.0045,
+    'MLC_sixes': 0.0045,
+    'MLC_wickets': 0.1,
+    'MLC_average_bowling': 0.001,
     'MLC_economy': 0.3,
-    'MLC_strike_rate_bowling': 0.1
+    'MLC_strike_rate_bowling': 0.05
 })
 
 #Final all-rounder score
@@ -214,10 +213,10 @@ all_rounder_score = pd.DataFrame({
 all_scores = team_score.merge(batting_score, on = 'team_abrv', how ='left').merge(bowling_score, on = 'team_abrv', how = 'left').merge(all_rounder_score, on = 'team_abrv', how = 'left')
 
 score_weights = pd.Series({
-    'team_score': 0.5,
-    'batting_score': 0.1,
-    'bowling_score': 0.1,
-    'all_rounder_score': 0.3
+    'team_score': 0.6,
+    'batting_score': 0.05,
+    'bowling_score': 0.15,
+    'all_rounder_score': 0.2
 })
 
 #Final score
